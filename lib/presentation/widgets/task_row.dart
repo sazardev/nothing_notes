@@ -4,7 +4,7 @@ import '../../core/theme/typography.dart';
 import '../../core/constants.dart';
 import '../../domain/models/task.dart';
 
-class TaskRow extends StatelessWidget {
+class TaskRow extends StatefulWidget {
   final Task task;
   final VoidCallback onTap;
   final ValueChanged<bool> onToggleComplete;
@@ -17,22 +17,34 @@ class TaskRow extends StatelessWidget {
   });
 
   @override
+  State<TaskRow> createState() => _TaskRowState();
+}
+
+class _TaskRowState extends State<TaskRow> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).brightness == Brightness.dark
         ? AppColors.dark
         : AppColors.light;
 
-    final isOverdue = task.dueDate != null &&
-        task.dueDate!.isBefore(DateTime.now()) &&
-        !task.isCompleted;
+    final isOverdue = widget.task.dueDate != null &&
+        widget.task.dueDate!.isBefore(DateTime.now()) &&
+        !widget.task.isCompleted;
 
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: AppConstants.animationFast,
         padding: const EdgeInsets.symmetric(
           horizontal: AppConstants.spaceMd,
           vertical: AppConstants.spaceSm + 4,
         ),
+        color: _isPressed ? colors.surface : Colors.transparent,
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(color: colors.border),
@@ -41,8 +53,8 @@ class TaskRow extends StatelessWidget {
         child: Row(
           children: [
             _Checkbox(
-              isChecked: task.isCompleted,
-              onChanged: (value) => onToggleComplete(value ?? false),
+              isChecked: widget.task.isCompleted,
+              onChanged: (value) => widget.onToggleComplete(value ?? false),
             ),
             const SizedBox(width: AppConstants.spaceMd),
             Expanded(
@@ -50,23 +62,23 @@ class TaskRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    task.title,
+                    widget.task.title,
                     style: NothingTypography.body(
-                      task.isCompleted
+                      widget.task.isCompleted
                           ? colors.textDisabled
                           : colors.textPrimary,
                     ).copyWith(
-                      decoration: task.isCompleted
+                      decoration: widget.task.isCompleted
                           ? TextDecoration.lineThrough
                           : null,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (task.notes != null && task.notes!.isNotEmpty) ...[
+                  if (widget.task.notes != null && widget.task.notes!.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
-                      task.notes!,
+                      widget.task.notes!,
                       style: NothingTypography.caption(colors.textDisabled),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -75,10 +87,10 @@ class TaskRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (task.dueDate != null) ...[
+            if (widget.task.dueDate != null) ...[
               const SizedBox(width: AppConstants.spaceSm),
               Text(
-                _formatDate(task.dueDate!),
+                _formatDate(widget.task.dueDate!),
                 style: NothingTypography.caption(
                   isOverdue ? colors.accent : colors.textSecondary,
                 ),
@@ -102,7 +114,7 @@ class TaskRow extends StatelessWidget {
   }
 }
 
-class _Checkbox extends StatelessWidget {
+class _Checkbox extends StatefulWidget {
   final bool isChecked;
   final ValueChanged<bool> onChanged;
 
@@ -112,32 +124,77 @@ class _Checkbox extends StatelessWidget {
   });
 
   @override
+  State<_Checkbox> createState() => _CheckboxState();
+}
+
+class _CheckboxState extends State<_Checkbox> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onChanged(!widget.isChecked);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).brightness == Brightness.dark
         ? AppColors.dark
         : AppColors.light;
 
     return GestureDetector(
-      onTap: () => onChanged(!isChecked),
-      child: AnimatedContainer(
-        duration: AppConstants.animationNormal,
-        width: AppConstants.checkboxSize,
-        height: AppConstants.checkboxSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isChecked ? colors.success : Colors.transparent,
-          border: Border.all(
-            color: isChecked ? colors.success : colors.borderVisible,
-            width: 2,
-          ),
-        ),
-        child: isChecked
-            ? Icon(
-                Icons.check,
-                size: 14,
-                color: colors.background,
-              )
-            : null,
+      onTap: _handleTap,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: AnimatedContainer(
+              duration: AppConstants.animationNormal,
+              width: AppConstants.checkboxSize,
+              height: AppConstants.checkboxSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: widget.isChecked ? colors.success : Colors.transparent,
+                border: Border.all(
+                  color: widget.isChecked ? colors.success : colors.borderVisible,
+                  width: 2,
+                ),
+              ),
+              child: widget.isChecked
+                  ? Center(
+                      child: Text(
+                        '✓',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colors.background,
+                          height: 1,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+          );
+        },
       ),
     );
   }
