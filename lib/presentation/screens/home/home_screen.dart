@@ -21,76 +21,56 @@ class HomeScreen extends ConsumerWidget {
     final selectedFilter = ref.watch(taskFilterProvider);
     final allTasksCount = ref.watch(allTasksCountProvider);
 
-    final isDesktop = MediaQuery.of(context).size.width > AppConstants.tabletBreakpoint;
+    final isMobile = MediaQuery.of(context).size.width < AppConstants.mobileBreakpoint;
+    final horizontalPadding = isMobile ? AppConstants.spaceMd : AppConstants.spaceLg;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context, colors, allTasksCount, isDesktop),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.spaceMd,
-                vertical: AppConstants.spaceSm,
-              ),
-              child: SegmentedFilter(
-                selected: selectedFilter,
-                onChanged: (filter) {
-                  ref.read(taskFilterProvider.notifier).state = filter;
-                },
-              ),
-            ),
-            Expanded(
-              child: tasksAsync.when(
-                data: (tasks) {
-                  if (tasks.isEmpty) {
-                    return _buildEmptyState(colors);
-                  }
-                  return ListView.builder(
-                    itemCount: tasks.length,
-                    itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      return TaskRow(
-                        task: task,
-                        onTap: () {
-                          if (task.id != null) {
-                            context.push('/task/${task.id}');
-                          }
-                        },
-                        onToggleComplete: (isCompleted) {
-                          if (task.id != null) {
-                            ref
-                                .read(taskNotifierProvider.notifier)
-                                .toggleCompletion(task.id!, isCompleted);
-                          }
-                        },
-                      );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(context, colors, allTasksCount, horizontalPadding),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: AppConstants.spaceSm,
+          ),
+          child: SegmentedFilter(
+            selected: selectedFilter,
+            onChanged: (filter) {
+              ref.read(taskFilterProvider.notifier).state = filter;
+            },
+          ),
+        ),
+        Expanded(
+          child: tasksAsync.when(
+            data: (tasks) {
+              if (tasks.isEmpty) {
+                return _buildEmptyState(colors);
+              }
+              return ListView.builder(
+                itemCount: tasks.length,
+                itemBuilder: (context, index) {
+                  final task = tasks[index];
+                  return TaskRow(
+                    task: task,
+                    onTap: () {
+                      if (task.id != null) {
+                        context.push('/task/${task.id}');
+                      }
+                    },
+                    onToggleComplete: (isCompleted) {
+                      if (task.id != null) {
+                        ref.read(taskNotifierProvider.notifier).toggleCompletion(task.id!, isCompleted);
+                      }
                     },
                   );
                 },
-                loading: () => _buildLoading(colors),
-                error: (error, _) => _buildError(colors, error.toString()),
-              ),
-            ),
-          ],
+              );
+            },
+            loading: () => _buildLoading(colors),
+            error: (error, _) => _buildError(colors, error.toString()),
+          ),
         ),
-      ),
-      floatingActionButton: isDesktop
-          ? null
-          : FloatingActionButton(
-              onPressed: () => context.push('/add'),
-              backgroundColor: colors.textDisplay,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.radiusPill),
-              ),
-              child: Icon(
-                Icons.add,
-                color: colors.background,
-              ),
-            ),
-      bottomNavigationBar: isDesktop ? null : _buildBottomNav(context, colors),
+      ],
     );
   }
 
@@ -98,10 +78,10 @@ class HomeScreen extends ConsumerWidget {
     BuildContext context,
     AppColors colors,
     AsyncValue<int> allTasksCount,
-    bool isDesktop,
+    double padding,
   ) {
     return Padding(
-      padding: EdgeInsets.all(isDesktop ? AppConstants.spaceLg : AppConstants.spaceMd),
+      padding: EdgeInsets.all(padding),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
@@ -115,7 +95,7 @@ class HomeScreen extends ConsumerWidget {
               '-',
               style: NothingTypography.displayLg(colors.textDisplay),
             ),
-            error: (_, __) => Text(
+            error: (_, _) => Text(
               '0',
               style: NothingTypography.displayLg(colors.textDisplay),
             ),
@@ -125,71 +105,6 @@ class HomeScreen extends ConsumerWidget {
             'TASKS',
             style: NothingTypography.label(colors.textSecondary),
           ),
-          const Spacer(),
-          if (isDesktop) _buildDesktopNav(context, colors),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopNav(BuildContext context, AppColors colors) {
-    final currentPath = GoRouterState.of(context).uri.path;
-    final isSettings = currentPath == '/settings';
-
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: () {
-            if (isSettings) context.go('/');
-          },
-          child: Text(
-            '[ TASKS ]',
-            style: NothingTypography.button(
-              isSettings ? colors.textDisplay : colors.textSecondary,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppConstants.spaceMd),
-        GestureDetector(
-          onTap: () {
-            if (!isSettings) context.push('/settings');
-          },
-          child: Text(
-            'SETTINGS',
-            style: NothingTypography.button(
-              isSettings ? colors.textSecondary : colors.textDisplay,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context, AppColors colors) {
-    final currentPath = GoRouterState.of(context).uri.path;
-    final isSettings = currentPath == '/settings';
-
-    return Container(
-      height: AppConstants.bottomNavHeight,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border(
-          top: BorderSide(color: colors.border),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(
-            label: 'TASKS',
-            isActive: !isSettings,
-            onTap: () => context.go('/'),
-          ),
-          _NavItem(
-            label: 'SETTINGS',
-            isActive: isSettings,
-            onTap: () => context.push('/settings'),
-          ),
         ],
       ),
     );
@@ -197,19 +112,22 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(AppColors colors) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'NO TASKS',
-            style: NothingTypography.heading(colors.textSecondary),
-          ),
-          const SizedBox(height: AppConstants.spaceSm),
-          Text(
-            'Add a task to get started',
-            style: NothingTypography.body(colors.textDisabled),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.space2xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'NO TASKS',
+              style: NothingTypography.heading(colors.textSecondary),
+            ),
+            const SizedBox(height: AppConstants.spaceSm),
+            Text(
+              'Add a task to get started',
+              style: NothingTypography.body(colors.textDisabled),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -228,55 +146,6 @@ class HomeScreen extends ConsumerWidget {
       child: Text(
         '[ERROR: $error]',
         style: NothingTypography.body(colors.accent),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).brightness == Brightness.dark
-        ? AppColors.dark
-        : AppColors.light;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 80,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: NothingTypography.label(
-                isActive ? colors.textDisplay : colors.textDisabled,
-              ),
-            ),
-            if (isActive) ...[
-              const SizedBox(height: 4),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.textDisplay,
-                ),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }
