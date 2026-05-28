@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/constants.dart';
@@ -18,98 +17,57 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final isDark = themeMode == ThemeMode.dark;
 
-    final isDesktop = MediaQuery.of(context).size.width > AppConstants.tabletBreakpoint;
+    final isMobile = MediaQuery.of(context).size.width < AppConstants.mobileBreakpoint;
+    final horizontalPadding = isMobile ? AppConstants.spaceMd : AppConstants.spaceLg;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.spaceMd),
-              child: Row(
-                children: [
-                  if (!isDesktop)
-                    _BackButton(onTap: () => context.pop()),
-                  const SizedBox(width: AppConstants.spaceMd),
-                  Text(
-                    'SETTINGS',
-                    style: NothingTypography.heading(colors.textDisplay),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppConstants.spaceMd),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SectionTitle(title: 'APPEARANCE'),
-                    const SizedBox(height: AppConstants.spaceSm),
-                    _ThemeToggle(
-                      isDark: isDark,
-                      onChanged: (dark) {
-                        ref.read(themeModeProvider.notifier).setTheme(
-                              dark ? ThemeMode.dark : ThemeMode.light,
-                            );
-                      },
-                    ),
-                    const SizedBox(height: AppConstants.space2xl),
-                    _SectionTitle(title: 'ABOUT'),
-                    const SizedBox(height: AppConstants.spaceMd),
-                    _InfoRow(label: 'APP NAME', value: 'Nothing Notes'),
-                    const SizedBox(height: AppConstants.spaceSm),
-                    _InfoRow(label: 'VERSION', value: '0.1.0'),
-                    const SizedBox(height: AppConstants.spaceSm),
-                    _InfoRow(label: 'DESIGN', value: 'Nothing Design'),
-                    const SizedBox(height: AppConstants.space2xl),
-                    _InfoRow(
-                      label: 'STORAGE',
-                      value: 'Local SQLite',
-                    ),
-                    const SizedBox(height: AppConstants.space2xl),
-                    Text(
-                      'All data is stored locally on your device. No internet connection required.',
-                      style: NothingTypography.caption(colors.textDisabled),
-                    ),
-                  ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.all(horizontalPadding),
+          child: Text(
+            'SETTINGS',
+            style: NothingTypography.heading(colors.textDisplay),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(horizontalPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionTitle(title: 'APPEARANCE'),
+                const SizedBox(height: AppConstants.spaceSm),
+                _ThemeToggle(
+                  isDark: isDark,
+                  onChanged: (dark) {
+                    ref.read(themeModeProvider.notifier).setTheme(
+                          dark ? ThemeMode.dark : ThemeMode.light,
+                        );
+                  },
                 ),
-              ),
+                const SizedBox(height: AppConstants.space2xl),
+                _SectionTitle(title: 'ABOUT'),
+                const SizedBox(height: AppConstants.spaceMd),
+                _InfoRow(label: 'APP NAME', value: 'Nothing Notes'),
+                const SizedBox(height: AppConstants.spaceSm),
+                _InfoRow(label: 'VERSION', value: '0.1.0'),
+                const SizedBox(height: AppConstants.spaceSm),
+                _InfoRow(label: 'DESIGN', value: 'Nothing Design'),
+                const SizedBox(height: AppConstants.space2xl),
+                _SectionTitle(title: 'STORAGE'),
+                const SizedBox(height: AppConstants.spaceMd),
+                _InfoRow(label: 'TYPE', value: 'Local SQLite'),
+                const SizedBox(height: AppConstants.space2xl),
+                Text(
+                  'All data is stored locally on your device. No internet connection required.',
+                  style: NothingTypography.caption(colors.textDisabled),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _BackButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _BackButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).brightness == Brightness.dark
-        ? AppColors.dark
-        : AppColors.light;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: AppConstants.backButtonSize,
-        height: AppConstants.backButtonSize,
-        decoration: BoxDecoration(
-          color: colors.surface,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          Icons.chevron_left,
-          color: colors.textPrimary,
-        ),
-      ),
+      ],
     );
   }
 }
@@ -148,7 +106,7 @@ class _ThemeToggle extends StatelessWidget {
         : AppColors.light;
 
     return Container(
-      height: 40,
+      height: 44,
       decoration: BoxDecoration(
         border: Border.all(color: colors.borderVisible),
         borderRadius: BorderRadius.circular(AppConstants.radiusInput),
@@ -193,7 +151,7 @@ class _ToggleOption extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: AppConstants.animationNormal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
           color: isSelected ? colors.textDisplay : Colors.transparent,
           borderRadius: BorderRadius.circular(AppConstants.radiusInput - 4),
