@@ -54,7 +54,7 @@ class HomeScreen extends ConsumerWidget {
                     task: task,
                     onTap: () {
                       if (task.id != null) {
-                        context.push('/task/${task.id}');
+                        context.push('/task/${task.id}', extra: task);
                       }
                     },
                     onToggleComplete: (isCompleted) {

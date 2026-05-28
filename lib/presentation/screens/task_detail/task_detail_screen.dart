@@ -13,8 +13,9 @@ import '../../widgets/priority_selector.dart';
 
 class TaskDetailScreen extends ConsumerStatefulWidget {
   final int? taskId;
+  final Task? initialTask;
 
-  const TaskDetailScreen({super.key, this.taskId});
+  const TaskDetailScreen({super.key, this.taskId, this.initialTask});
 
   @override
   ConsumerState<TaskDetailScreen> createState() => _TaskDetailScreenState();
@@ -111,11 +112,19 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     final horizontalPadding = isMobile ? AppConstants.spaceMd : AppConstants.spaceLg;
 
     if (isEditing) {
+      if (widget.initialTask != null && !_isInitialized) {
+        _initializeForEdit(widget.initialTask!);
+      }
+      if (_isInitialized) {
+        return _buildForm(context, colors, true, horizontalPadding);
+      }
       final taskAsync = ref.watch(taskByIdProvider(widget.taskId!));
       return taskAsync.when(
         data: (Task? task) {
-          if (task != null) {
-            _initializeForEdit(task);
+          if (task != null && !_isInitialized) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _initializeForEdit(task);
+            });
           }
           return _buildForm(context, colors, task != null, horizontalPadding);
         },
@@ -206,7 +215,10 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   Widget _buildLoading(AppColors colors) {
     return Center(
-      child: SegmentedLoadingIndicator(color: colors.textSecondary),
+      child: Text(
+        '[LOADING...]',
+        style: NothingTypography.body(colors.textSecondary),
+      ),
     );
   }
 

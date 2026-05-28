@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../domain/models/task.dart';
 import '../../presentation/screens/home/home_screen.dart';
 import '../../presentation/screens/task_detail/task_detail_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/shell/app_shell.dart';
 import '../constants.dart';
+import 'nothing_page_transitions.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -15,25 +17,40 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/',
           name: RouteNames.home,
-          builder: (_, _) => const HomeScreen(),
+          pageBuilder: (context, state) => NothingPageTransitions.fade(
+            child: const HomeScreen(),
+            state: state,
+          ),
         ),
         GoRoute(
           path: '/task/:id',
           name: RouteNames.taskDetail,
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final id = int.tryParse(state.pathParameters['id'] ?? '');
-            return TaskDetailScreen(taskId: id);
+            return NothingPageTransitions.fade(
+              child: TaskDetailScreen(
+                taskId: id,
+                initialTask: state.extra as Task?,
+              ),
+              state: state,
+            );
           },
         ),
         GoRoute(
           path: '/add',
           name: RouteNames.addTask,
-          builder: (_, _) => const TaskDetailScreen(),
+          pageBuilder: (context, state) => NothingPageTransitions.fade(
+            child: const TaskDetailScreen(),
+            state: state,
+          ),
         ),
         GoRoute(
           path: '/settings',
           name: RouteNames.settings,
-          builder: (_, _) => const SettingsScreen(),
+          pageBuilder: (context, state) => NothingPageTransitions.fade(
+            child: const SettingsScreen(),
+            state: state,
+          ),
         ),
       ],
     ),
