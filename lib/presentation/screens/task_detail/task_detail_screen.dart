@@ -107,6 +107,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         ? AppColors.dark
         : AppColors.light;
 
+    final isMobile = MediaQuery.of(context).size.width < AppConstants.mobileBreakpoint;
+    final horizontalPadding = isMobile ? AppConstants.spaceMd : AppConstants.spaceLg;
+
     if (isEditing) {
       final taskAsync = ref.watch(taskByIdProvider(widget.taskId!));
       return taskAsync.when(
@@ -114,111 +117,96 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
           if (task != null) {
             _initializeForEdit(task);
           }
-          return _buildContent(context, colors, task != null);
+          return _buildForm(context, colors, task != null, horizontalPadding);
         },
-        loading: () => _buildScaffold(context, colors, _buildLoading(colors)),
-        error: (e, _) => _buildScaffold(context, colors, _buildError(colors, e.toString())),
+        loading: () => _buildLoading(colors),
+        error: (e, _) => _buildError(colors, e.toString()),
       );
     }
 
-    return _buildContent(context, colors, true);
+    return _buildForm(context, colors, true, horizontalPadding);
   }
 
-  Widget _buildContent(BuildContext context, AppColors colors, bool isValid) {
-    return _buildScaffold(
-      context,
-      colors,
-      SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.spaceMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            NothingInput(
-              label: 'TITLE',
-              hint: 'Task title',
-              controller: _titleController,
-              autofocus: !isEditing,
-              errorText: _titleController.text.isEmpty && _isLoading
-                  ? 'Title is required'
-                  : null,
-            ),
-            const SizedBox(height: AppConstants.spaceLg),
-            NothingDatePicker(
-              selectedDate: _dueDate,
-              onChanged: (date) => setState(() => _dueDate = date),
-            ),
-            const SizedBox(height: AppConstants.spaceLg),
-            PrioritySelector(
-              selected: _priority,
-              onChanged: (p) => setState(() => _priority = p),
-            ),
-            const SizedBox(height: AppConstants.spaceLg),
-            NothingInput(
-              label: 'NOTES',
-              hint: 'Optional notes',
-              controller: _notesController,
-              maxLines: 4,
-            ),
-            const SizedBox(height: AppConstants.space2xl),
-            Row(
+  Widget _buildForm(
+    BuildContext context,
+    AppColors colors,
+    bool isValid,
+    double horizontalPadding,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.all(horizontalPadding),
+          child: Text(
+            isEditing ? 'EDIT TASK' : 'NEW TASK',
+            style: NothingTypography.heading(colors.textDisplay),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(horizontalPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isEditing)
-                  Expanded(
-                    child: NothingButton(
-                      label: 'DELETE',
-                      variant: NothingButtonVariant.destructive,
-                      onPressed: _isLoading ? null : _delete,
+                NothingInput(
+                  label: 'TITLE',
+                  hint: 'Task title',
+                  controller: _titleController,
+                  autofocus: !isEditing,
+                  errorText: _titleController.text.isEmpty && _isLoading
+                      ? 'Title is required'
+                      : null,
+                ),
+                const SizedBox(height: AppConstants.spaceLg),
+                NothingDatePicker(
+                  selectedDate: _dueDate,
+                  onChanged: (date) => setState(() => _dueDate = date),
+                ),
+                const SizedBox(height: AppConstants.spaceLg),
+                PrioritySelector(
+                  selected: _priority,
+                  onChanged: (p) => setState(() => _priority = p),
+                ),
+                const SizedBox(height: AppConstants.spaceLg),
+                NothingInput(
+                  label: 'NOTES',
+                  hint: 'Optional notes',
+                  controller: _notesController,
+                  maxLines: 4,
+                ),
+                const SizedBox(height: AppConstants.space2xl),
+                Row(
+                  children: [
+                    if (isEditing)
+                      Expanded(
+                        child: NothingButton(
+                          label: 'DELETE',
+                          variant: NothingButtonVariant.destructive,
+                          onPressed: _isLoading ? null : _delete,
+                        ),
+                      ),
+                    if (isEditing) const SizedBox(width: AppConstants.spaceMd),
+                    Expanded(
+                      child: NothingButton(
+                        label: isEditing ? 'UPDATE' : 'SAVE',
+                        onPressed: _isLoading || !isValid ? null : _save,
+                        isLoading: _isLoading,
+                      ),
                     ),
-                  ),
-                if (isEditing) const SizedBox(width: AppConstants.spaceMd),
-                Expanded(
-                  child: NothingButton(
-                    label: isEditing ? 'UPDATE' : 'SAVE',
-                    onPressed: _isLoading || !isValid ? null : _save,
-                    isLoading: _isLoading,
-                  ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildScaffold(BuildContext context, AppColors colors, Widget body) {
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.spaceMd),
-              child: Row(
-                children: [
-                  _BackButton(onTap: () => context.pop()),
-                  const SizedBox(width: AppConstants.spaceMd),
-                  Text(
-                    isEditing ? 'EDIT TASK' : 'NEW TASK',
-                    style: NothingTypography.heading(colors.textDisplay),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(child: body),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
   Widget _buildLoading(AppColors colors) {
     return Center(
-      child: Text(
-        '[LOADING...]',
-        style: NothingTypography.body(colors.textSecondary),
-      ),
+      child: SegmentedLoadingIndicator(color: colors.textSecondary),
     );
   }
 
@@ -232,31 +220,66 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   }
 }
 
-class _BackButton extends StatelessWidget {
-  final VoidCallback onTap;
+class SegmentedLoadingIndicator extends StatefulWidget {
+  final Color color;
+  final int segmentCount;
+  final double size;
 
-  const _BackButton({required this.onTap});
+  const SegmentedLoadingIndicator({
+    super.key,
+    required this.color,
+    this.segmentCount = 8,
+    this.size = 32,
+  });
+
+  @override
+  State<SegmentedLoadingIndicator> createState() => _SegmentedLoadingIndicatorState();
+}
+
+class _SegmentedLoadingIndicatorState extends State<SegmentedLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).brightness == Brightness.dark
-        ? AppColors.dark
-        : AppColors.light;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: AppConstants.backButtonSize,
-        height: AppConstants.backButtonSize,
-        decoration: BoxDecoration(
-          color: colors.surface,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          Icons.chevron_left,
-          color: colors.textPrimary,
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(widget.segmentCount, (index) {
+              final progress = (_controller.value * widget.segmentCount - index).clamp(0.0, 1.0);
+              return Container(
+                width: 3,
+                height: widget.size * 0.6,
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
+                  color: widget.color.withValues(alpha: 0.3 + (progress * 0.7)),
+                ),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 }
