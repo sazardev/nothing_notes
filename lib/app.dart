@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
 import 'presentation/providers/theme_provider.dart';
 
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProviderScope(child: NothingNotesApp()));
+}
+
 class NothingNotesApp extends ConsumerWidget {
   const NothingNotesApp({super.key});
 
