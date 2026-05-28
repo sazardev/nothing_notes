@@ -40,7 +40,7 @@ class SegmentedFilter extends StatelessWidget {
             onTap: () => onChanged(filter.$1),
             child: AnimatedContainer(
               duration: AppConstants.animationNormal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: isSelected ? colors.textDisplay : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppConstants.radiusInput - 4),
@@ -52,6 +52,7 @@ class SegmentedFilter extends StatelessWidget {
                   fontFamily: 'Space Mono',
                   fontSize: 11,
                   letterSpacing: 0.08,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   color: isSelected ? colors.background : colors.textSecondary,
                 ),
               ),
